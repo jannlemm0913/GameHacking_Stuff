@@ -1,0 +1,32 @@
+Call function from code cave with CreateRemoteThread injection:
+
+push rdx                       // momentanen wert in rdx auf stack zwischenspeichern
+push rcx                       // momentanen wert in rcx auf stack zwischenspeichern
+mov rdx, qword ptr ss:[rsp]    // der string, der von CRT übergeben wird, ist in rcx. dieses wurde gerade auf den stack gepusht
+mov rcx, 0x(times)             // times = 1 in diesem beispiel
+movabs rax, 0x(hiddenFunction) // call hiddenFunction ist nicht position independent, da compiler hier einen immediate integer
+                               // mit offset zur hiddenFunction adresse einsetzen würde
+                               // so wird absolute address von hiddenFunction in rax geschrieben
+call rax                       // rax wird von hiddenFunction sowieso überschrieben, deshalb kann das register genutzt werden
+pop rcx                        // vorherigen wert in rcx von stack in register, rsp-0x08
+pop rdx                        // vorherigen wert in rdx von stack in register, rsp-0x08
+ret
+
+https://defuse.ca/online-x86-assembler.htm
+
+
+BYTE codeCave[28] = {
+    0x52,                                      // push rdx
+    0x51,                                      // push rcx
+    0x48, 0x8b, 0x14, 0x24,                    // mov rdx, qword ptr [rsp]
+    0x48, 0xc7, 0xc1, 0x01, 0x00, 0x00, 0x00,  // mov rcx, 0x(times)
+    0x48, 0xb8, 0x00, 0x00, 0x00, 0x00,        // movabs rax, 0x(hiddenFunction)
+    0x00, 0x00, 0x00, 0x00,
+    0xff, 0xd0,                                // call rax
+    0x59,                                      // pop rcx
+    0x5A,                                      // pop rdx
+    0xC3                                       // ret
+};
+
+hiddenFunction address: 00007FF7E1EF10F0
+little endian: 00 00 7f f7 e1 ef 10 f0
